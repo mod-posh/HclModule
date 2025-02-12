@@ -13,9 +13,9 @@ jobs:
 
       - name: Get Project Version
         id: get_version
-        uses: mod-posh/GetProjectVersion@v0.0.2.2
+        uses: mod-posh/GetProjectVersion@v0.0.3.0
         with:
-          Filename: '${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}.csproj'
+          Filename: '${{ vars.PROJECT_NAME }}.csproj'
           verbose: "verbose"
 
       - name: Create Release Notes
@@ -43,14 +43,47 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y powershell
 
+      - name: Update README using custom action
+        uses: mod-posh/UpdateReadme@main
+        with:
+          project_name: "${{ vars.PROJECT_NAME }}"
+          verbose: true
+
       - name: Install XMLDocMD Tool
         run: dotnet tool install --global xmldocmd
 
       - name: Build Project
-        run: dotnet build ${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}.csproj --configuration Release
+        run: dotnet build ${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}.csproj --configuration Release
 
-      - name: Publish Project
-        run: dotnet publish ${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}.csproj --configuration Release --output ./publish
+      - name: Pack Project
+        run: dotnet pack ${{ vars.PROJECT_NAME }}/${{ vars.PROJECT_NAME }}.csproj --configuration Release --output ./publish /p:PackageId=${{ vars.PROJECT_ID }}
+      
+      - name: Push to NuGet
+        run: dotnet nuget push ./publish/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Find and Copy Build Files to Publish Folder
+        shell: pwsh
+        run: |
+          # Find the DLL's exact location within any bin/Release/ directory
+          $dllPath = Get-ChildItem -Path . -Recurse -Filter "${{ vars.PROJECT_NAME }}.dll" -File | Select-Object -First 1
+      
+          if (-not $dllPath) {
+            Write-Error "Error: DLL not found!"
+            exit 1
+          }
+      
+          # Extract the parent bin/Release directory path
+          $releaseDir = $dllPath.Directory.FullName
+      
+          Write-Output "Found DLL at: $dllPath"
+          Write-Output "Copying all files from: $releaseDir"
+      
+          # Ensure publish directory exists
+          New-Item -Path "./publish" -ItemType Directory -Force
+      
+          # Copy everything from the located Release folder into ./publish/
+          Copy-Item -Path "$releaseDir\*" -Destination "./publish/" -Recurse -Force
+
 
       - name: Generate Documentation
         run: |
@@ -68,13 +101,10 @@ jobs:
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git rebase origin/${{ github.ref_name }} || git pull --rebase
           git add Docs/
           git commit -m "Update documentation for release v${{ env.VERSION }}"
           git push origin ${{ github.ref_name }}
         if: success()
-
-      - name: Update README using custom action
-        uses: mod-posh/UpdateReadme@main
-        with:
-          project_name: "${{ vars.PROJECT_NAME }}"
-          verbose: true
+        
