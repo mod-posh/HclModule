@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ModPosh.Hclmodule</RootNamespace>
+    <PackageId>ModPosh.Hclmodule</PackageId>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>A PowerShell module that leverages the ModPosh.Hcl parser</Title>
+    <Version>1.0.0</Version>
+    <Authors>Jeffrey S. Patton</Authors>
+    <Company>Patton-Tech.com</Company>
+    <Description></Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/mod-posh/HclModule</RepositoryUrl>
+    <CLSCompliant>false</CLSCompliant>
+    <PrivateAssets>all</PrivateAssets>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <NoWarn>$(NoWarn);3021</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.0" />
+    <PackageReference Include="Modposh.Hcl" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
